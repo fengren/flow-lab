@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Session Workflow Dashboard</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #667085;
+      --line: #e4e7ec;
+      --blue: #2563eb;
+      --green: #059669;
+      --amber: #d97706;
+      --red: #dc2626;
+      --purple: #7c3aed;
+      --radius: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.45;
+    }
+    header {
+      padding: 28px 32px 18px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+    h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: 0; }
+    h2 { margin: 0 0 14px; font-size: 18px; }
+    h3 { margin: 0 0 8px; font-size: 15px; }
+    .sub { color: var(--muted); font-size: 14px; }
+    main { padding: 24px 32px 40px; max-width: 1480px; margin: 0 auto; }
+    .grid { display: grid; gap: 16px; }
+    .kpis { grid-template-columns: repeat(6, minmax(140px, 1fr)); }
+    .two { grid-template-columns: 1.15fr .85fr; }
+    .three { grid-template-columns: repeat(3, 1fr); }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px;
+      min-width: 0;
+    }
+    .kpi .value { font-size: 28px; font-weight: 750; margin-top: 6px; }
+    .kpi .label { color: var(--muted); font-size: 13px; }
+    .bar-row { display: grid; grid-template-columns: minmax(140px, 260px) 1fr 54px; gap: 10px; align-items: center; margin: 9px 0; }
+    .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #344054; font-size: 13px; }
+    .bar-track { height: 10px; background: #eef2ff; border-radius: 999px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--blue); border-radius: inherit; }
+    .bar-value { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12px; }
+    .stack { display: flex; flex-direction: column; gap: 10px; }
+    .skill {
+      display: grid;
+      grid-template-columns: 54px 1fr;
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fcfcfd;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 26px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      background: var(--blue);
+    }
+    .badge.P1 { background: var(--purple); }
+    .badge.P2 { background: var(--green); }
+    .skill p { margin: 0; color: var(--muted); font-size: 13px; }
+    .examples { max-height: 560px; overflow: auto; padding-right: 4px; }
+    .example {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .example:last-child { border-bottom: 0; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 5px; color: var(--muted); font-size: 12px; }
+    .pill { padding: 2px 7px; background: #f2f4f7; border-radius: 999px; }
+    .text { font-size: 13px; color: #344054; }
+    .insights {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .insight {
+      border-left: 3px solid var(--blue);
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .insight strong { display: block; margin-bottom: 4px; }
+    .recommendations {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .recommendation {
+      border: 1px solid var(--line);
+      background: #fcfcfd;
+      border-radius: var(--radius);
+      padding: 14px;
+      min-width: 0;
+    }
+    .recommendation h3 { font-size: 14px; margin: 0 0 6px; }
+    .recommendation p { margin: 0; color: var(--muted); font-size: 13px; }
+    .prompt-template {
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: #111827;
+      color: #f9fafb;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+    }
+    .activity-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .activity-summary { color: var(--muted); font-size: 13px; }
+    .activity-actions { display: flex; gap: 6px; align-items: center; }
+    .activity-mode {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #344054;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .activity-mode.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
+    .activity-wrap { overflow-x: auto; padding-bottom: 4px; }
+    .activity-grid {
+      display: grid;
+      grid-template-columns: 34px repeat(var(--weeks), 15px);
+      grid-template-rows: 18px repeat(7, 15px);
+      gap: 4px;
+      min-width: max-content;
+      align-items: center;
+    }
+    .month-label {
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 12px;
+      white-space: nowrap;
+    }
+    .weekday-label {
+      grid-column: 1;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 12px;
+    }
+    .day-cell {
+      width: 15px;
+      height: 15px;
+      border-radius: 3px;
+      background: #ebedf0;
+      outline: 1px solid rgba(23, 32, 51, 0.04);
+      cursor: pointer;
+    }
+    .day-cell.out { opacity: 0.32; }
+    .level-0 { background: #ebedf0; }
+    .level-1 { background: #dbeafe; }
+    .level-2 { background: #93c5fd; }
+    .level-3 { background: #3b82f6; }
+    .level-4 { background: #1d4ed8; }
+    .activity-legend {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .legend-cell { width: 15px; height: 15px; border-radius: 3px; }
+    .activity-detail {
+      margin-top: 10px;
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    footer { padding: 0 32px 28px; color: var(--muted); font-size: 12px; max-width: 1480px; margin: 0 auto; }
+    @media (max-width: 980px) {
+      header, main, footer { padding-left: 18px; padding-right: 18px; }
+      .kpis, .two, .three, .insights, .recommendations { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: minmax(90px, 140px) 1fr 42px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Session Workflow Dashboard</h1>
+    <div class="sub">Codex + Claude 本地会话聚合分析 · <span id="range"></span> · 生成于 <span id="generated"></span></div>
+  </header>
+  <main class="grid">
+    <section class="grid kpis" id="kpis"></section>
+    <section class="panel">
+      <h2>工作方式结论</h2>
+      <div class="insights">
+        <div class="insight"><strong>主模式</strong>你的协作方式是“产品/架构判断 + AI 执行 + 行为验收”，不是一次性代码生成。</div>
+        <div class="insight"><strong>高频闭环</strong>目标描述 → 实现/修复 → Review 风险 → 运行验证 → 根据日志/截图/设计稿继续收敛。</div>
+        <div class="insight"><strong>效率瓶颈</strong>Review 类型混在一起、任务中断后容易重复探索、登录/转发/前端对齐等排查路径重复。</div>
+        <div class="insight"><strong>优化方向</strong>把“Review”“继续”“对照设计稿”“登录不行”升级成稳定 skill 入口，固定检查清单。</div>
+      </div>
+    </section>
+    <section class="panel">
+      <div class="activity-head">
+        <h2 id="activity-title">全年活跃矩阵</h2>
+        <div class="activity-actions">
+          <button class="activity-mode active" data-mode="prompts" type="button">对话数</button>
+          <button class="activity-mode" data-mode="tokens" type="button">Token 消耗</button>
+        </div>
+      </div>
+      <div class="activity-summary" id="activity-summary"></div>
+      <div class="activity-wrap">
+        <div class="activity-grid" id="activity-grid"></div>
+      </div>
+      <div class="activity-legend">
+        <span>少</span>
+        <span class="legend-cell level-0"></span>
+        <span class="legend-cell level-1"></span>
+        <span class="legend-cell level-2"></span>
+        <span class="legend-cell level-3"></span>
+        <span class="legend-cell level-4"></span>
+        <span>多</span>
+      </div>
+      <div class="activity-detail" id="activity-detail">点击任意日期查看对话数和 token 消耗。</div>
+    </section>
+    <section class="panel">
+      <h2>工作优化建议</h2>
+      <div class="recommendations" id="recommendations"></div>
+      <div class="prompt-template" id="prompt-template"></div>
+    </section>
+    <section class="grid two">
+      <div class="panel"><h2>任务类别</h2><div id="categories"></div></div>
+      <div class="panel"><h2>Agent 来源</h2><div id="sources"></div></div>
+    </section>
+    <section class="grid two">
+      <div class="panel"><h2>高频项目</h2><div id="projects"></div></div>
+      <div class="panel"><h2>高频触发词</h2><div id="phrases"></div></div>
+    </section>
+    <section class="grid two">
+      <div class="panel"><h2>工具调用 Top</h2><div id="tools"></div></div>
+      <div class="panel"><h2>Skill 候选</h2><div class="stack" id="skills"></div></div>
+    </section>
+    <section class="panel">
+      <h2>代表性需求摘录</h2>
+      <div class="examples" id="examples"></div>
+    </section>
+  </main>
+  <footer>说明：看板只使用本机可访问的会话日志；需求摘录已做基础脱敏并截断，不包含完整原始对话。</footer>
+  <script id="dashboard-data" type="application/json">{"generatedAt": "2026-06-01 10:00:00", "range": {"start": "2026-01-01", "end": "2026-06-01"}, "summary": {"sessions": 128, "meaningfulPrompts": 864, "assistantMessages": 3150, "toolCalls": 4860, "totalTokens": 742680000, "rawLines": 188400, "codexSessions": 52, "claudeSessions": 76, "codexPrompts": 336, "claudePrompts": 528}, "sources": [{"name": "Claude", "value": 528}, {"name": "Codex", "value": 336}], "categories": [{"name": "实现/修复功能", "value": 244}, {"name": "审查/风险评估", "value": 186}, {"name": "前端/设计稿/UI", "value": 152}, {"name": "架构/产品决策", "value": 116}, {"name": "数据/日志/监控", "value": 92}, {"name": "发布/CI/Git", "value": 74}], "projects": [{"name": "example/flow-lab", "value": 220}, {"name": "example/agent-platform", "value": 178}, {"name": "example/frontend-console", "value": 141}, {"name": "example/auth-service", "value": 118}, {"name": "example/observability", "value": 86}], "tools": [{"name": "exec_command", "value": 1680}, {"name": "apply_patch", "value": 438}, {"name": "browser.screenshot", "value": 126}, {"name": "rg", "value": 1220}, {"name": "git", "value": 394}], "phrases": [{"name": "Review", "value": 132}, {"name": "修复", "value": 118}, {"name": "继续完成", "value": 96}, {"name": "对照", "value": 74}, {"name": "是否可以", "value": 62}, {"name": "提交", "value": 58}], "timeline": [], "activityMatrix": {"year": 2026, "days": [{"date": "2025-12-28", "day": 0, "week": 0, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": false}, {"date": "2025-12-29", "day": 1, "week": 0, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": false}, {"date": "2025-12-30", "day": 2, "week": 0, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": false}, {"date": "2025-12-31", "day": 3, "week": 0, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": false}, {"date": "2026-01-01", "day": 4, "week": 0, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-02", "day": 5, "week": 0, "prompts": 4, "tokens": 78880, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-03", "day": 6, "week": 0, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-04", "day": 0, "week": 1, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-05", "day": 1, "week": 1, "prompts": 7, "tokens": 142450, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-06", "day": 2, "week": 1, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-07", "day": 3, "week": 1, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-08", "day": 4, "week": 1, "prompts": 10, "tokens": 209800, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-09", "day": 5, "week": 1, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-10", "day": 6, "week": 1, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-11", "day": 0, "week": 2, "prompts": 4, "tokens": 86440, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-12", "day": 1, "week": 2, "prompts": 5, "tokens": 109100, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-13", "day": 2, "week": 2, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-14", "day": 3, "week": 2, "prompts": 7, "tokens": 155680, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-15", "day": 4, "week": 2, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-16", "day": 5, "week": 2, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-17", "day": 6, "week": 2, "prompts": 10, "tokens": 228700, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-18", "day": 0, "week": 3, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-19", "day": 1, "week": 3, "prompts": 3, "tokens": 69870, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-20", "day": 2, "week": 3, "prompts": 4, "tokens": 94000, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-21", "day": 3, "week": 3, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-22", "day": 4, "week": 3, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-23", "day": 5, "week": 3, "prompts": 7, "tokens": 168910, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-24", "day": 6, "week": 3, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-25", "day": 0, "week": 4, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-26", "day": 1, "week": 4, "prompts": 10, "tokens": 247600, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-01-27", "day": 2, "week": 4, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-28", "day": 3, "week": 4, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-29", "day": 4, "week": 4, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-30", "day": 5, "week": 4, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-01-31", "day": 6, "week": 4, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-01", "day": 0, "week": 5, "prompts": 4, "tokens": 83240, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-02", "day": 1, "week": 5, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-03", "day": 2, "week": 5, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-04", "day": 3, "week": 5, "prompts": 10, "tokens": 214400, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-05", "day": 4, "week": 5, "prompts": 3, "tokens": 64950, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-06", "day": 5, "week": 5, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-07", "day": 6, "week": 5, "prompts": 7, "tokens": 154490, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-08", "day": 0, "week": 6, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-09", "day": 1, "week": 6, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-10", "day": 2, "week": 6, "prompts": 4, "tokens": 90800, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-11", "day": 3, "week": 6, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-12", "day": 4, "week": 6, "prompts": 8, "tokens": 184960, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-13", "day": 5, "week": 6, "prompts": 10, "tokens": 233300, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-14", "day": 6, "week": 6, "prompts": 18, "tokens": 756000, "promptLevel": 3, "tokenLevel": 3, "inYear": true}, {"date": "2026-02-15", "day": 0, "week": 7, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-16", "day": 1, "week": 7, "prompts": 7, "tokens": 167720, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-17", "day": 2, "week": 7, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-18", "day": 3, "week": 7, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-19", "day": 4, "week": 7, "prompts": 4, "tokens": 98360, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-20", "day": 5, "week": 7, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-21", "day": 6, "week": 7, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-22", "day": 0, "week": 8, "prompts": 10, "tokens": 252200, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-23", "day": 1, "week": 8, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-24", "day": 2, "week": 8, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-25", "day": 3, "week": 8, "prompts": 7, "tokens": 180950, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-26", "day": 4, "week": 8, "prompts": 9, "tokens": 234540, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-02-27", "day": 5, "week": 8, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-02-28", "day": 6, "week": 8, "prompts": 4, "tokens": 105920, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-01", "day": 0, "week": 9, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-02", "day": 1, "week": 9, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-03", "day": 2, "week": 9, "prompts": 22, "tokens": 924000, "promptLevel": 4, "tokenLevel": 4, "inYear": true}, {"date": "2026-03-04", "day": 3, "week": 9, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-05", "day": 4, "week": 9, "prompts": 8, "tokens": 183600, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-06", "day": 5, "week": 9, "prompts": 2, "tokens": 46320, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-07", "day": 6, "week": 9, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-08", "day": 0, "week": 10, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-09", "day": 1, "week": 10, "prompts": 2, "tokens": 47580, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-10", "day": 2, "week": 10, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-11", "day": 3, "week": 10, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-12", "day": 4, "week": 10, "prompts": 2, "tokens": 48840, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-13", "day": 5, "week": 10, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-14", "day": 6, "week": 10, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-15", "day": 0, "week": 11, "prompts": 2, "tokens": 50100, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-16", "day": 1, "week": 11, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-17", "day": 2, "week": 11, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-18", "day": 3, "week": 11, "prompts": 2, "tokens": 51360, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-19", "day": 4, "week": 11, "prompts": 5, "tokens": 129450, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-20", "day": 5, "week": 11, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-21", "day": 6, "week": 11, "prompts": 2, "tokens": 52620, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-22", "day": 0, "week": 12, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-23", "day": 1, "week": 12, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-24", "day": 2, "week": 12, "prompts": 2, "tokens": 53880, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-25", "day": 3, "week": 12, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-26", "day": 4, "week": 12, "prompts": 8, "tokens": 218880, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-27", "day": 5, "week": 12, "prompts": 2, "tokens": 55140, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-03-28", "day": 6, "week": 12, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-29", "day": 0, "week": 13, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-30", "day": 1, "week": 13, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-03-31", "day": 2, "week": 13, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-01", "day": 3, "week": 13, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-02", "day": 4, "week": 13, "prompts": 10, "tokens": 236200, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-03", "day": 5, "week": 13, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-04", "day": 6, "week": 13, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-05", "day": 0, "week": 14, "prompts": 4, "tokens": 97000, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-06", "day": 1, "week": 14, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-07", "day": 2, "week": 14, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-08", "day": 3, "week": 14, "prompts": 7, "tokens": 174160, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-09", "day": 4, "week": 14, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-10", "day": 5, "week": 14, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-11", "day": 6, "week": 14, "prompts": 10, "tokens": 255100, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-12", "day": 0, "week": 15, "prompts": 5, "tokens": 128600, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-13", "day": 1, "week": 15, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-14", "day": 2, "week": 15, "prompts": 4, "tokens": 104560, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-15", "day": 3, "week": 15, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-16", "day": 4, "week": 15, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-17", "day": 5, "week": 15, "prompts": 7, "tokens": 187390, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-18", "day": 6, "week": 15, "prompts": 20, "tokens": 840000, "promptLevel": 4, "tokenLevel": 4, "inYear": true}, {"date": "2026-04-19", "day": 0, "week": 16, "prompts": 6, "tokens": 163140, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-20", "day": 1, "week": 16, "prompts": 10, "tokens": 274000, "promptLevel": 2, "tokenLevel": 2, "inYear": true}, {"date": "2026-04-21", "day": 2, "week": 16, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-22", "day": 3, "week": 16, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-23", "day": 4, "week": 16, "prompts": 4, "tokens": 112120, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-24", "day": 5, "week": 16, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-25", "day": 6, "week": 16, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-26", "day": 0, "week": 17, "prompts": 7, "tokens": 200620, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-04-27", "day": 1, "week": 17, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-28", "day": 2, "week": 17, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-29", "day": 3, "week": 17, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-04-30", "day": 4, "week": 17, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-01", "day": 5, "week": 17, "prompts": 7, "tokens": 172970, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-02", "day": 6, "week": 17, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-03", "day": 0, "week": 18, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-04", "day": 1, "week": 18, "prompts": 4, "tokens": 101360, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-05", "day": 2, "week": 18, "prompts": 9, "tokens": 229950, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-06", "day": 3, "week": 18, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-07", "day": 4, "week": 18, "prompts": 10, "tokens": 259700, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-08", "day": 5, "week": 18, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-09", "day": 6, "week": 18, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-10", "day": 0, "week": 19, "prompts": 7, "tokens": 186200, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-11", "day": 1, "week": 19, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-12", "day": 2, "week": 19, "prompts": 8, "tokens": 216160, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-13", "day": 3, "week": 19, "prompts": 4, "tokens": 108920, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-14", "day": 4, "week": 19, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-15", "day": 5, "week": 19, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-16", "day": 6, "week": 19, "prompts": 10, "tokens": 278600, "promptLevel": 2, "tokenLevel": 2, "inYear": true}, {"date": "2026-05-17", "day": 0, "week": 20, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-18", "day": 1, "week": 20, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-19", "day": 2, "week": 20, "prompts": 7, "tokens": 199430, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-20", "day": 3, "week": 20, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-21", "day": 4, "week": 20, "prompts": 26, "tokens": 1092000, "promptLevel": 4, "tokenLevel": 4, "inYear": true}, {"date": "2026-05-22", "day": 5, "week": 20, "prompts": 4, "tokens": 116480, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-23", "day": 6, "week": 20, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-24", "day": 0, "week": 21, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-25", "day": 1, "week": 21, "prompts": 10, "tokens": 297500, "promptLevel": 2, "tokenLevel": 2, "inYear": true}, {"date": "2026-05-26", "day": 2, "week": 21, "prompts": 6, "tokens": 179760, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-27", "day": 3, "week": 21, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-28", "day": 4, "week": 21, "prompts": 7, "tokens": 212660, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-05-29", "day": 5, "week": 21, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-30", "day": 6, "week": 21, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-05-31", "day": 0, "week": 22, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-01", "day": 1, "week": 22, "prompts": 16, "tokens": 672000, "promptLevel": 3, "tokenLevel": 3, "inYear": true}, {"date": "2026-06-02", "day": 2, "week": 22, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-03", "day": 3, "week": 22, "prompts": 2, "tokens": 52860, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-04", "day": 4, "week": 22, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-05", "day": 5, "week": 22, "prompts": 5, "tokens": 134250, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-06", "day": 6, "week": 22, "prompts": 2, "tokens": 54120, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-07", "day": 0, "week": 23, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-08", "day": 1, "week": 23, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-09", "day": 2, "week": 23, "prompts": 2, "tokens": 55380, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-10", "day": 3, "week": 23, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-11", "day": 4, "week": 23, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-12", "day": 5, "week": 23, "prompts": 2, "tokens": 56640, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-13", "day": 6, "week": 23, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-14", "day": 0, "week": 24, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-15", "day": 1, "week": 24, "prompts": 2, "tokens": 57900, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-16", "day": 2, "week": 24, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-17", "day": 3, "week": 24, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-18", "day": 4, "week": 24, "prompts": 2, "tokens": 59160, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-19", "day": 5, "week": 24, "prompts": 8, "tokens": 238320, "promptLevel": 2, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-20", "day": 6, "week": 24, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-21", "day": 0, "week": 25, "prompts": 2, "tokens": 60420, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-22", "day": 1, "week": 25, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-23", "day": 2, "week": 25, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-24", "day": 3, "week": 25, "prompts": 2, "tokens": 61680, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-25", "day": 4, "week": 25, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-26", "day": 5, "week": 25, "prompts": 5, "tokens": 156300, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-27", "day": 6, "week": 25, "prompts": 2, "tokens": 62940, "promptLevel": 1, "tokenLevel": 1, "inYear": true}, {"date": "2026-06-28", "day": 0, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-29", "day": 1, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-06-30", "day": 2, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-01", "day": 3, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-02", "day": 4, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-03", "day": 5, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-04", "day": 6, "week": 26, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-05", "day": 0, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-06", "day": 1, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-07", "day": 2, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-08", "day": 3, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-09", "day": 4, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-10", "day": 5, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-11", "day": 6, "week": 27, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-12", "day": 0, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-13", "day": 1, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-14", "day": 2, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-15", "day": 3, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-16", "day": 4, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-17", "day": 5, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-18", "day": 6, "week": 28, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-19", "day": 0, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-20", "day": 1, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-21", "day": 2, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-22", "day": 3, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-23", "day": 4, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-24", "day": 5, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-25", "day": 6, "week": 29, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-26", "day": 0, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-27", "day": 1, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-28", "day": 2, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-29", "day": 3, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-30", "day": 4, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-07-31", "day": 5, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-01", "day": 6, "week": 30, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-02", "day": 0, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-03", "day": 1, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-04", "day": 2, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-05", "day": 3, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-06", "day": 4, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-07", "day": 5, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-08", "day": 6, "week": 31, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-09", "day": 0, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-10", "day": 1, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-11", "day": 2, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-12", "day": 3, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-13", "day": 4, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-14", "day": 5, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-15", "day": 6, "week": 32, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-16", "day": 0, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-17", "day": 1, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-18", "day": 2, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-19", "day": 3, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-20", "day": 4, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-21", "day": 5, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-22", "day": 6, "week": 33, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-23", "day": 0, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-24", "day": 1, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-25", "day": 2, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-26", "day": 3, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-27", "day": 4, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-28", "day": 5, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-29", "day": 6, "week": 34, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-30", "day": 0, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-08-31", "day": 1, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-01", "day": 2, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-02", "day": 3, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-03", "day": 4, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-04", "day": 5, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-05", "day": 6, "week": 35, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-06", "day": 0, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-07", "day": 1, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-08", "day": 2, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-09", "day": 3, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-10", "day": 4, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-11", "day": 5, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-12", "day": 6, "week": 36, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-13", "day": 0, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-14", "day": 1, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-15", "day": 2, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-16", "day": 3, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-17", "day": 4, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-18", "day": 5, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-19", "day": 6, "week": 37, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-20", "day": 0, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-21", "day": 1, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-22", "day": 2, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-23", "day": 3, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-24", "day": 4, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-25", "day": 5, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-26", "day": 6, "week": 38, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-27", "day": 0, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-28", "day": 1, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-29", "day": 2, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-09-30", "day": 3, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-01", "day": 4, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-02", "day": 5, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-03", "day": 6, "week": 39, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-04", "day": 0, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-05", "day": 1, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-06", "day": 2, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-07", "day": 3, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-08", "day": 4, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-09", "day": 5, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-10", "day": 6, "week": 40, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-11", "day": 0, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-12", "day": 1, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-13", "day": 2, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-14", "day": 3, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-15", "day": 4, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-16", "day": 5, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-17", "day": 6, "week": 41, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-18", "day": 0, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-19", "day": 1, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-20", "day": 2, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-21", "day": 3, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-22", "day": 4, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-23", "day": 5, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-24", "day": 6, "week": 42, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-25", "day": 0, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-26", "day": 1, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-27", "day": 2, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-28", "day": 3, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-29", "day": 4, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-30", "day": 5, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-10-31", "day": 6, "week": 43, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-01", "day": 0, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-02", "day": 1, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-03", "day": 2, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-04", "day": 3, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-05", "day": 4, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-06", "day": 5, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-07", "day": 6, "week": 44, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-08", "day": 0, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-09", "day": 1, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-10", "day": 2, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-11", "day": 3, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-12", "day": 4, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-13", "day": 5, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-14", "day": 6, "week": 45, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-15", "day": 0, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-16", "day": 1, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-17", "day": 2, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-18", "day": 3, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-19", "day": 4, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-20", "day": 5, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-21", "day": 6, "week": 46, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-22", "day": 0, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-23", "day": 1, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-24", "day": 2, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-25", "day": 3, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-26", "day": 4, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-27", "day": 5, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-28", "day": 6, "week": 47, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-29", "day": 0, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-11-30", "day": 1, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-01", "day": 2, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-02", "day": 3, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-03", "day": 4, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-04", "day": 5, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-05", "day": 6, "week": 48, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-06", "day": 0, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-07", "day": 1, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-08", "day": 2, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-09", "day": 3, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-10", "day": 4, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-11", "day": 5, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-12", "day": 6, "week": 49, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-13", "day": 0, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-14", "day": 1, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-15", "day": 2, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-16", "day": 3, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-17", "day": 4, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-18", "day": 5, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-19", "day": 6, "week": 50, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-20", "day": 0, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-21", "day": 1, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-22", "day": 2, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-23", "day": 3, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-24", "day": 4, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-25", "day": 5, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-26", "day": 6, "week": 51, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-27", "day": 0, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-28", "day": 1, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-29", "day": 2, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-30", "day": 3, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2026-12-31", "day": 4, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": true}, {"date": "2027-01-01", "day": 5, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": false}, {"date": "2027-01-02", "day": 6, "week": 52, "prompts": 0, "tokens": 0, "promptLevel": 0, "tokenLevel": 0, "inYear": false}], "months": [{"label": "Jan", "week": 0}, {"label": "Feb", "week": 5}, {"label": "Mar", "week": 9}, {"label": "Apr", "week": 13}, {"label": "May", "week": 17}, {"label": "Jun", "week": 22}, {"label": "Jul", "week": 26}, {"label": "Aug", "week": 30}, {"label": "Sep", "week": 35}, {"label": "Oct", "week": 39}, {"label": "Nov", "week": 44}, {"label": "Dec", "week": 48}], "maxPrompts": 26, "maxTokens": 1092000, "activePromptDays": 76, "activeTokenDays": 76, "totalPrompts": 500, "totalTokens": 14421580, "weeks": 53}, "recommendations": [{"title": "把临时指令升级成固定流程", "body": "把 Review、继续、对照设计稿、登录排查等高频动作沉淀成明确入口，减少重复解释。"}, {"title": "任务开始先写验收标准", "body": "每个任务先明确目标、修改范围、验证方式和风险点，再进入实现。"}, {"title": "中断后先恢复上下文", "body": "继续任务时先汇总已完成、未完成、阻塞点和下一步命令，再执行。"}, {"title": "区分三类 Review", "body": "行为 Review 看 bug，架构 Review 看职责和耦合，发布 Review 看配置、CI 和回滚。"}, {"title": "用截图关闭前端任务", "body": "前端改动用桌面和移动端截图验证布局、文案、溢出和交互状态。"}, {"title": "敏感信息默认脱敏", "body": "涉及 token、密钥、账号、内部域名和本地路径时，先脱敏再生成报告或提交。"}], "promptTemplate": "用 session-dashboard 固定流程处理这个任务。\n目标：生成本地 AI coding session 看板。\n输入：Codex、Claude 或其他 Code Agent 的本地会话日志。\n输出：HTML Dashboard、活跃矩阵、token 总览、工作建议。\n安全要求：只使用本地数据，生成物提交前必须脱敏。", "examples": [{"source": "Codex", "date": "03-03", "project": "example/flow-lab", "text": "整理本地 AI coding session，生成 HTML 数据看板，包含全年活跃矩阵和 token 总览。"}, {"source": "Claude", "date": "04-18", "project": "example/frontend-console", "text": "对照设计稿检查 Dashboard 的布局、矩阵热点大小、移动端文本溢出和交互细节。"}, {"source": "Codex", "date": "05-21", "project": "example/auth-service", "text": "分析登录链路的失败原因，区分配置问题、回调问题、cookie 问题和权限问题。"}, {"source": "Claude", "date": "06-01", "project": "example/agent-platform", "text": "把重复出现的工作流沉淀为可复用 Skill，并补充安装、运行和扩展说明。"}], "skills": [{"name": "implementation-review-loop", "priority": "P0", "why": "覆盖实现、修复、验证和提交前检查。", "triggers": "实现后 review / 修复后验证 / 提交前检查"}, {"name": "frontend-design-parity", "priority": "P0", "why": "前端任务需要稳定的截图和设计稿对齐流程。", "triggers": "对照设计稿 / 样式差异 / 移动端检查"}, {"name": "session-resume", "priority": "P1", "why": "中断任务后需要先恢复上下文，避免重复探索。", "triggers": "继续 / status / 接着做"}]}</script>
+  <script>
+    const data = JSON.parse(document.getElementById('dashboard-data').textContent);
+    document.getElementById('range').textContent = `${data.range.start} 至 ${data.range.end}`;
+    document.getElementById('generated').textContent = data.generatedAt;
+
+    const kpis = [
+      ['会话数', data.summary.sessions],
+      ['有效需求', data.summary.meaningfulPrompts],
+      ['Token 总消耗', data.summary.totalTokens],
+      ['Claude 需求', data.summary.claudePrompts],
+      ['Codex 需求', data.summary.codexPrompts],
+      ['工具调用', data.summary.toolCalls],
+    ];
+    document.getElementById('kpis').innerHTML = kpis.map(([label, value]) =>
+      `<div class="panel kpi"><div class="label">${label}</div><div class="value">${formatNumber(value)}</div></div>`
+    ).join('');
+
+    function renderBars(id, rows, color = 'var(--blue)') {
+      const max = Math.max(1, ...rows.map(r => r.value));
+      document.getElementById(id).innerHTML = rows.map(r => {
+        const width = Math.max(2, Math.round(r.value / max * 100));
+        return `<div class="bar-row" title="${escapeHtml(r.name)}: ${r.value}">
+          <div class="bar-label">${escapeHtml(r.name)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${width}%; background:${color}"></div></div>
+          <div class="bar-value">${r.value}</div>
+        </div>`;
+      }).join('');
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
+
+    function formatNumber(value) {
+      const number = Number(value || 0);
+      if (number >= 1000000000) return `${(number / 1000000000).toFixed(2)}B`;
+      if (number >= 1000000) return `${(number / 1000000).toFixed(2)}M`;
+      return number.toLocaleString();
+    }
+
+    renderBars('categories', data.categories, 'var(--blue)');
+    renderBars('sources', data.sources, 'var(--green)');
+    renderBars('projects', data.projects, 'var(--purple)');
+    renderBars('phrases', data.phrases, 'var(--amber)');
+    renderBars('tools', data.tools, 'var(--red)');
+
+    let activityMode = 'prompts';
+
+    function renderActivityMatrix() {
+      const matrix = data.activityMatrix;
+      const grid = document.getElementById('activity-grid');
+      grid.style.setProperty('--weeks', matrix.weeks);
+      const isToken = activityMode === 'tokens';
+      document.getElementById('activity-title').textContent = `${matrix.year} 全年活跃矩阵`;
+      document.getElementById('activity-summary').textContent = isToken
+        ? `${matrix.activeTokenDays} 个 token 活跃日 · ${formatNumber(matrix.totalTokens)} token · 单日最高 ${formatNumber(matrix.maxTokens)} token`
+        : `${matrix.activePromptDays} 个对话活跃日 · ${matrix.totalPrompts.toLocaleString()} 条有效需求 · 单日最高 ${matrix.maxPrompts} 条`;
+      const weekdays = [
+        [1, 'Mon'],
+        [3, 'Wed'],
+        [5, 'Fri'],
+      ];
+      const monthNodes = matrix.months.map(month =>
+        `<div class="month-label" style="grid-column:${month.week + 2}; grid-row:1">${month.label}</div>`
+      );
+      const weekdayNodes = weekdays.map(([row, label]) =>
+        `<div class="weekday-label" style="grid-row:${row + 2}">${label}</div>`
+      );
+      const dayNodes = matrix.days.map((day, index) => {
+        const level = isToken ? day.tokenLevel : day.promptLevel;
+        const value = isToken ? `${formatNumber(day.tokens)} token` : `${day.prompts} 条有效需求`;
+        return `<div class="day-cell level-${level}${day.inYear ? '' : ' out'}"
+          data-index="${index}"
+          style="grid-column:${day.week + 2}; grid-row:${day.day + 2}"
+          title="${day.date}: ${value}"></div>`;
+      });
+      grid.innerHTML = [...monthNodes, ...weekdayNodes, ...dayNodes].join('');
+      grid.querySelectorAll('.day-cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+          const day = matrix.days[Number(cell.dataset.index)];
+          document.getElementById('activity-detail').textContent =
+            `${day.date}：${day.prompts.toLocaleString()} 条有效需求，${formatNumber(day.tokens)} token`;
+        });
+      });
+    }
+
+    document.querySelectorAll('.activity-mode').forEach(button => {
+      button.addEventListener('click', () => {
+        activityMode = button.dataset.mode;
+        document.querySelectorAll('.activity-mode').forEach(item => item.classList.toggle('active', item === button));
+        renderActivityMatrix();
+      });
+    });
+
+    renderActivityMatrix();
+
+    document.getElementById('recommendations').innerHTML = data.recommendations.map(item => `
+      <div class="recommendation">
+        <h3>${escapeHtml(item.title)}</h3>
+        <p>${escapeHtml(item.body)}</p>
+      </div>
+    `).join('');
+    document.getElementById('prompt-template').textContent = data.promptTemplate;
+
+    document.getElementById('skills').innerHTML = data.skills.map(s => `
+      <div class="skill">
+        <div><span class="badge ${s.priority}">${s.priority}</span></div>
+        <div>
+          <h3>${escapeHtml(s.name)}</h3>
+          <p>${escapeHtml(s.why)}</p>
+          <p>触发：${escapeHtml(s.triggers)}</p>
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('examples').innerHTML = data.examples.map(e => `
+      <div class="example">
+        <div class="meta"><span class="pill">${escapeHtml(e.source)}</span><span>${escapeHtml(e.date)}</span><span>${escapeHtml(e.project)}</span></div>
+        <div class="text">${escapeHtml(e.text)}</div>
+      </div>
+    `).join('');
+  </script>
+</body>
+</html>

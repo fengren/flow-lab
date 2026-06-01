@@ -28,6 +28,14 @@ python3 scripts/build_session_dashboard.py --output session_workflow_dashboard.h
 
 The script reads local logs and writes a standalone HTML file.
 
+For public demos or screenshots, use mock data:
+
+```bash
+python3 scripts/build_session_dashboard.py --mock --output examples/mock-dashboard.html
+```
+
+Mock mode must not read local session logs.
+
 Default implemented adapters:
 
 - Codex: `~/.codex/sessions/**/*.jsonl`
@@ -122,4 +130,3 @@ After running the script, report:
 - Which providers were parsed
 - Session count, effective prompt count, token total
 - Any providers requested but not supported or not found
-

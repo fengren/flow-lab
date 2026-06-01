@@ -526,6 +526,160 @@ def build_data() -> dict[str, Any]:
     }
 
 
+def build_mock_data() -> dict[str, Any]:
+    """Build public demo data without reading local session logs."""
+    year = 2026
+    daily_prompts: Counter[str] = Counter()
+    daily_tokens: Counter[str] = Counter()
+    for month in range(1, 7):
+        for day in range(1, 29):
+            if (day + month) % 3 == 0 or day in {5, 12, 19, 26}:
+                key = f"{year}-{month:02d}-{day:02d}"
+                prompts = ((day * month) % 9) + 2
+                daily_prompts[key] = prompts
+                daily_tokens[key] = prompts * (18000 + month * 1300 + day * 210)
+    for key, prompts in {
+        "2026-02-14": 18,
+        "2026-03-03": 22,
+        "2026-04-18": 20,
+        "2026-05-21": 26,
+        "2026-06-01": 16,
+    }.items():
+        daily_prompts[key] = prompts
+        daily_tokens[key] = prompts * 42000
+
+    recommendations = [
+        {
+            "title": "把临时指令升级成固定流程",
+            "body": "把 Review、继续、对照设计稿、登录排查等高频动作沉淀成明确入口，减少重复解释。",
+        },
+        {
+            "title": "任务开始先写验收标准",
+            "body": "每个任务先明确目标、修改范围、验证方式和风险点，再进入实现。",
+        },
+        {
+            "title": "中断后先恢复上下文",
+            "body": "继续任务时先汇总已完成、未完成、阻塞点和下一步命令，再执行。",
+        },
+        {
+            "title": "区分三类 Review",
+            "body": "行为 Review 看 bug，架构 Review 看职责和耦合，发布 Review 看配置、CI 和回滚。",
+        },
+        {
+            "title": "用截图关闭前端任务",
+            "body": "前端改动用桌面和移动端截图验证布局、文案、溢出和交互状态。",
+        },
+        {
+            "title": "敏感信息默认脱敏",
+            "body": "涉及 token、密钥、账号、内部域名和本地路径时，先脱敏再生成报告或提交。",
+        },
+    ]
+    prompt_template = (
+        "用 session-dashboard 固定流程处理这个任务。\n"
+        "目标：生成本地 AI coding session 看板。\n"
+        "输入：Codex、Claude 或其他 Code Agent 的本地会话日志。\n"
+        "输出：HTML Dashboard、活跃矩阵、token 总览、工作建议。\n"
+        "安全要求：只使用本地数据，生成物提交前必须脱敏。"
+    )
+    return {
+        "generatedAt": "2026-06-01 10:00:00",
+        "range": {"start": "2026-01-01", "end": "2026-06-01"},
+        "summary": {
+            "sessions": 128,
+            "meaningfulPrompts": 864,
+            "assistantMessages": 3150,
+            "toolCalls": 4860,
+            "totalTokens": 742_680_000,
+            "rawLines": 188_400,
+            "codexSessions": 52,
+            "claudeSessions": 76,
+            "codexPrompts": 336,
+            "claudePrompts": 528,
+        },
+        "sources": [{"name": "Claude", "value": 528}, {"name": "Codex", "value": 336}],
+        "categories": [
+            {"name": "实现/修复功能", "value": 244},
+            {"name": "审查/风险评估", "value": 186},
+            {"name": "前端/设计稿/UI", "value": 152},
+            {"name": "架构/产品决策", "value": 116},
+            {"name": "数据/日志/监控", "value": 92},
+            {"name": "发布/CI/Git", "value": 74},
+        ],
+        "projects": [
+            {"name": "example/flow-lab", "value": 220},
+            {"name": "example/agent-platform", "value": 178},
+            {"name": "example/frontend-console", "value": 141},
+            {"name": "example/auth-service", "value": 118},
+            {"name": "example/observability", "value": 86},
+        ],
+        "tools": [
+            {"name": "exec_command", "value": 1680},
+            {"name": "apply_patch", "value": 438},
+            {"name": "browser.screenshot", "value": 126},
+            {"name": "rg", "value": 1220},
+            {"name": "git", "value": 394},
+        ],
+        "phrases": [
+            {"name": "Review", "value": 132},
+            {"name": "修复", "value": 118},
+            {"name": "继续完成", "value": 96},
+            {"name": "对照", "value": 74},
+            {"name": "是否可以", "value": 62},
+            {"name": "提交", "value": 58},
+        ],
+        "timeline": [],
+        "activityMatrix": build_activity_matrix(daily_prompts, daily_tokens, year),
+        "recommendations": recommendations,
+        "promptTemplate": prompt_template,
+        "examples": [
+            {
+                "source": "Codex",
+                "date": "03-03",
+                "project": "example/flow-lab",
+                "text": "整理本地 AI coding session，生成 HTML 数据看板，包含全年活跃矩阵和 token 总览。",
+            },
+            {
+                "source": "Claude",
+                "date": "04-18",
+                "project": "example/frontend-console",
+                "text": "对照设计稿检查 Dashboard 的布局、矩阵热点大小、移动端文本溢出和交互细节。",
+            },
+            {
+                "source": "Codex",
+                "date": "05-21",
+                "project": "example/auth-service",
+                "text": "分析登录链路的失败原因，区分配置问题、回调问题、cookie 问题和权限问题。",
+            },
+            {
+                "source": "Claude",
+                "date": "06-01",
+                "project": "example/agent-platform",
+                "text": "把重复出现的工作流沉淀为可复用 Skill，并补充安装、运行和扩展说明。",
+            },
+        ],
+        "skills": [
+            {
+                "name": "implementation-review-loop",
+                "priority": "P0",
+                "why": "覆盖实现、修复、验证和提交前检查。",
+                "triggers": "实现后 review / 修复后验证 / 提交前检查",
+            },
+            {
+                "name": "frontend-design-parity",
+                "priority": "P0",
+                "why": "前端任务需要稳定的截图和设计稿对齐流程。",
+                "triggers": "对照设计稿 / 样式差异 / 移动端检查",
+            },
+            {
+                "name": "session-resume",
+                "priority": "P1",
+                "why": "中断任务后需要先恢复上下文，避免重复探索。",
+                "triggers": "继续 / status / 接着做",
+            },
+        ],
+    }
+
+
 def render_dashboard(data: dict[str, Any]) -> str:
     payload = json.dumps(data, ensure_ascii=False)
     safe_payload = payload.replace("</script", "<\\/script")
@@ -931,8 +1085,9 @@ def render_dashboard(data: dict[str, Any]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build a local HTML dashboard from Codex and Claude session logs.")
     parser.add_argument("--output", "-o", type=Path, default=DEFAULT_OUTPUT, help="Output HTML path.")
+    parser.add_argument("--mock", action="store_true", help="Use public mock data instead of reading local session logs.")
     args = parser.parse_args()
-    data = build_data()
+    data = build_mock_data() if args.mock else build_data()
     output = args.output.expanduser().resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(render_dashboard(data), encoding="utf-8")
