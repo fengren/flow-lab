@@ -32,6 +32,61 @@ python3 skills/session-dashboard/scripts/build_session_dashboard.py --output ses
 
 Then open the generated `session_workflow_dashboard.html` locally in a browser.
 
+## Install As A Skill
+
+The skill package is self-contained under:
+
+```text
+skills/session-dashboard/
+```
+
+To use it as a Codex skill, copy or symlink that directory into your Codex skills directory:
+
+```bash
+mkdir -p ~/.codex/skills
+cp -R skills/session-dashboard ~/.codex/skills/session-dashboard
+```
+
+After installation, start a new Codex session and ask for tasks such as:
+
+```text
+Use the session-dashboard skill to generate my AI coding session dashboard.
+```
+
+```text
+整理我的 Codex 和 Claude session，生成一个 HTML 数据看板，并统计 token 总消耗。
+```
+
+```text
+根据本地 Code Agent 会话，分析我的工作方式、活跃矩阵、开发语言占比和可提炼的 skills。
+```
+
+The skill instructions tell the agent when to run the bundled script, how to interpret the output, and how to report the result.
+
+## Use As A Script
+
+You can also use Flow Lab without installing the skill:
+
+```bash
+python3 scripts/build_session_dashboard.py --output session_workflow_dashboard.html
+```
+
+Useful options:
+
+- `--output <path>`: write the generated dashboard to a specific file.
+
+The script currently has no third-party Python dependencies.
+
+Expected local inputs:
+
+- Codex sessions under `~/.codex/sessions/**/*.jsonl`
+- Claude Code sessions under `~/.claude/projects/**/*.jsonl`
+
+Expected output:
+
+- A standalone HTML dashboard.
+- A terminal JSON summary with session count, prompt count, token total, provider split, and date range.
+
 ## Supported Sources
 
 Implemented adapters:
@@ -67,7 +122,13 @@ The reusable Codex skill lives in:
 skills/session-dashboard/
 ```
 
-The skill describes when to use the dashboard generator, how to parse agent logs, how token totals are computed, and how to add provider adapters.
+Main files:
+
+- `SKILL.md`: agent-facing instructions, trigger cases, parsing rules, privacy rules, and final response format.
+- `scripts/build_session_dashboard.py`: the dashboard generator.
+- `references/agent-log-sources.md`: notes for implemented and planned provider adapters.
+
+When extending the skill, keep `SKILL.md` focused on behavior and put provider-specific storage notes in `references/`.
 
 ## Development
 
