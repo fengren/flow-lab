@@ -1,0 +1,17 @@
+.DS_Store
+__pycache__/
+*.pyc
+
+# Local generated reports can contain personal session metadata.
+session_workflow_dashboard.html
+session_workflow_dashboard*.html
+SESSION_WORKFLOW_ANALYSIS.md
+reports/
+*.local.html
+
+# Local editor and environment files.
+.env
+.env.*
+.idea/
+.vscode/
+
