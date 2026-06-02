@@ -417,46 +417,52 @@ def build_data() -> dict[str, Any]:
 
     skill_candidates = [
         {
-            "name": "ray-implementation-review-loop",
+            "name": "implementation-review-loop",
             "priority": "P0",
             "why": "覆盖实现、修复、Review、提交前检查的最高频闭环。",
             "triggers": "实现后 review / 修复后验证 / 如果没问题就提交",
         },
         {
-            "name": "ray-frontend-design-parity",
+            "name": "frontend-design-parity",
             "priority": "P0",
             "why": "前端和设计稿对齐出现频繁，且需要截图验证和细节清单。",
             "triggers": "对照设计稿 / 样式差异 / 文案 icon 字号 颜色",
         },
         {
-            "name": "ray-auth-integration-debug",
+            "name": "auth-integration-debug",
             "priority": "P1",
             "why": "飞书扫码、OAuth、callback、cookie 和多组织登录反复出现。",
             "triggers": "飞书登录不行 / 扫码登录 / callback 配置",
         },
         {
-            "name": "ray-session-resume",
+            "name": "session-resume",
             "priority": "P1",
             "why": "中断和继续较多，需要稳定恢复上下文，减少重复探索。",
             "triggers": "继续 / status / 继续完成",
         },
         {
-            "name": "ray-service-forwarding-architecture",
+            "name": "service-forwarding-architecture",
             "priority": "P1",
             "why": "外部服务转发、OpenResty、控制面/数据面边界需要固定审查口径。",
             "triggers": "外部转发 / OpenResty / 动态注册发现 / 鉴权管控",
         },
         {
-            "name": "ray-observability-local-stack",
+            "name": "observability-local-stack",
             "priority": "P2",
             "why": "日志、Loki、Grafana、GA、转发日志常作为验证手段。",
             "triggers": "loki / grafana / 日志没有报错 / 看板",
         },
         {
-            "name": "ray-secret-hygiene",
+            "name": "secret-hygiene",
             "priority": "P2",
             "why": "会话里出现密钥和账号排查，应默认脱敏并检查 diff。",
             "triggers": "aksk / token / .env / secret / 账号余额异常",
+        },
+        {
+            "name": "release-readiness-check",
+            "priority": "P2",
+            "why": "提交、推送、发布前需要固定检查验证、脱敏、生成物边界。",
+            "triggers": "commit / push / 发布 / 如果没问题就提交",
         },
     ]
     recommendations = [

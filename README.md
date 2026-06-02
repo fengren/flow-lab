@@ -145,6 +145,10 @@ Main files:
 
 When extending the skill, keep `SKILL.md` focused on behavior and put provider-specific storage notes in `references/`.
 
+## Workflow Skills
+
+Flow Lab also includes workflow skills extracted from repeated AI coding session patterns. See [workflow-optimization-skills.md](docs/workflow-optimization-skills.md).
+
 ## Development
 
 The project currently uses only the Python standard library.

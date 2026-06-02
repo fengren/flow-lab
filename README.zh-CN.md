@@ -67,7 +67,7 @@ python3 scripts/build_session_dashboard.py --mock --output examples/mock-dashboa
 
 ## 安装成 Codex Skill
 
-Skill 包位于：
+Dashboard Skill 包位于：
 
 ```text
 skills/session-dashboard/
@@ -88,6 +88,31 @@ cp -R skills/session-dashboard ~/.codex/skills/session-dashboard
 
 ```text
 根据本地 Code Agent 会话，分析我的工作方式、活跃矩阵、token 总消耗、开发语言占比和可提炼的 skills。
+```
+
+## 工作流 Skills
+
+除了 `session-dashboard`，仓库里还根据高频工作模式生成了一组可独立安装的工作流 Skills：
+
+- `implementation-review-loop`：实现、修复、Review、验证闭环。
+- `frontend-design-parity`：前端设计稿对齐和截图验证。
+- `auth-integration-debug`：登录、OAuth、callback、cookie、权限排查。
+- `session-resume`：中断或压缩上下文后的状态恢复。
+- `service-forwarding-architecture`：服务转发、代理、控制面/数据面架构审查。
+- `observability-local-stack`：日志、Loki、Grafana、analytics、trace 验证。
+- `secret-hygiene`：密钥、token、账号、路径、报告脱敏。
+- `release-readiness-check`：提交、推送、发布前检查。
+
+详细建议见：
+
+```text
+docs/workflow-optimization-skills.md
+```
+
+安装单个 Skill：
+
+```bash
+cp -R skills/implementation-review-loop ~/.codex/skills/implementation-review-loop
 ```
 
 ## 脚本参数
